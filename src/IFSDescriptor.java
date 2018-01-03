@@ -3,17 +3,20 @@ import utils.math.parser.MathParser2;
 import java.util.*;
 
 public class IFSDescriptor {
-
-	static final String VERSION = "2.0";
+	
+	/**
+	 * IFS Descriptor file parser version
+	 */
+	private static final String VERSION = "2.0";
 	
 	double xmin, xmax, ymin, ymax;
 	
-	Random rand;
+	private Random rand;
 	
-	List<Function> functions;
+	private List<Function> functions;
 	
-	public IFSDescriptor(String source) throws Exception{
-		ParseTree p = new ParseTree(source.split("\n"));
+	public IFSDescriptor(List<String> source) throws Exception {
+		ParseTree p = new ParseTree(source);
 		if (!p.values.get("VERSION").equals(VERSION)) {
 			System.err.println("IFS Descriptor file version mismatch: incompatible input");
 			System.exit(1);
@@ -29,7 +32,7 @@ public class IFSDescriptor {
 		}
 	}
 	
-	public IFSDescriptor(String source, int randomSeed) throws Exception{
+	public IFSDescriptor(List<String> source, int randomSeed) throws Exception{
 		this(source);
 		rand = new Random(randomSeed);
 	}
@@ -110,16 +113,16 @@ public class IFSDescriptor {
 		 * Creates a <code>ParseTree</code> from the given source code
 		 * @param data line-separated source code
 		 */
-		ParseTree(String[] data) {
+		ParseTree(List<String> data) {
 			values = new HashMap<>();
 			children = new ArrayList<>();
-			for (int i = 0; i < data.length; i++) {
-				String l = data[i];
+			for (int i = 0; i < data.size(); i++) {
+				String l = data.get(i);
 				String[] tokens = l.split(" ");
 				switch(tokens[0]) {
 					case "FUNCTION":
-						children.add(new ParseTree(Arrays.copyOfRange(data, i + 1, data.length)));
-						do i++; while (!data[i].equals("END")); // fast forward to the end of the subtree
+						children.add(new ParseTree(data.subList(i+1, data.size())));
+						do i++; while (!data.get(i).equals("END")); // fast forward to the end of the subtree
 						break;
 					case "END":
 						return; // return from recursive call at the end of the subtree
