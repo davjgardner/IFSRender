@@ -1,3 +1,5 @@
+package ifs;
+
 import utils.math.parser.MathParser2;
 
 import java.util.*;
@@ -9,16 +11,23 @@ public class IFSDescriptor {
 	 */
 	private static final String VERSION = "2.0";
 	
+	static final int R = 0, G = 1, B = 2, FREQ = 3, X = 3, Y = 4;
+	
 	double xmin, xmax, ymin, ymax;
 	
 	private Random rand;
 	
 	private List<Function> functions;
 	
-	public IFSDescriptor(List<String> source) throws Exception {
+	private Map<String, Double> globals;
+	
+	IFSDescriptor(List<String> source) throws Exception {
+		functions = new ArrayList<>();
+		globals = new HashMap<>();
 		ParseTree p = new ParseTree(source);
-		if (!p.values.get("VERSION").equals(VERSION)) {
-			System.err.println("IFS Descriptor file version mismatch: incompatible input");
+		if (!p.values.get("VERSION").trim().equals(VERSION)) {
+			System.err.println("IFS Descriptor file version mismatch: expected '" +
+					VERSION + "', got '" + p.values.get("VERSION") + "'");
 			System.exit(1);
 		}
 		this.xmin = Double.parseDouble(p.values.get("XMIN"));
@@ -30,6 +39,7 @@ public class IFSDescriptor {
 					c.values.get("R"), c.values.get("G"), c.values.get("B"),
 					c.values.get("PROB")));
 		}
+		rand = new Random();
 	}
 	
 	public IFSDescriptor(List<String> source, int randomSeed) throws Exception{
@@ -39,11 +49,22 @@ public class IFSDescriptor {
 	
 	/**
 	 * Randomly picks a function from the list and runs it with the given variable mappings
-	 * @param vars variable mappings
+	 * @param p input point
+	 * @param i iteration
 	 * @return {x, y, r, g, b}
 	 * @throws Exception if the evaluation fails
 	 */
-	double[] runFunc(Map<String, Double> vars) throws Exception {
+	double[] runFunc(double[] p, int i) throws Exception {
+		Map<String, Double> vars = new HashMap<>();
+		vars.put("_x", p[X]);
+		vars.put("_y", p[Y]);
+		vars.put("_r", p[R]);
+		vars.put("_g", p[G]);
+		vars.put("_b", p[B]);
+		vars.put("_i", (double) i);
+		vars.put("_R2", p[X] * p[X] + p[Y] * p[Y]);
+		vars.put("_R", Math.sqrt(p[X] * p[X] + p[Y] * p[Y]));
+		vars.put("_theta", Math.atan2(p[Y], p[X]));
 		double r = rand.nextDouble();
 		double a = 0.0;
 		for (Function f : functions) {
@@ -73,6 +94,7 @@ public class IFSDescriptor {
 		 */
 		Function(String x, String y, String r, String g, String b, String prob) throws Exception {
 			this.prob = Double.parseDouble(prob);
+			MathParser2.initConstants(new HashMap<>()); // this is necessary here - bug in MathParser2
 			xrpn = MathParser2.toRPN(MathParser2.tokenizeInput(x));
 			yrpn = MathParser2.toRPN(MathParser2.tokenizeInput(y));
 			rrpn = MathParser2.toRPN(MathParser2.tokenizeInput(r));
@@ -93,7 +115,13 @@ public class IFSDescriptor {
 			double r = MathParser2.parseRPN(rrpn);
 			double g = MathParser2.parseRPN(grpn);
 			double b = MathParser2.parseRPN(brpn);
-			return new double[] {x, y, r, g, b};
+			double[] p = new double[5];
+			p[X] = x;
+			p[Y] = y;
+			p[R] = r;
+			p[G] = g;
+			p[B] = b;
+			return p;
 		}
 	}
 	
@@ -117,7 +145,8 @@ public class IFSDescriptor {
 			values = new HashMap<>();
 			children = new ArrayList<>();
 			for (int i = 0; i < data.size(); i++) {
-				String l = data.get(i);
+				String l = data.get(i).trim();
+				if (l.isEmpty()) continue;
 				String[] tokens = l.split(" ");
 				switch(tokens[0]) {
 					case "FUNCTION":
@@ -131,6 +160,13 @@ public class IFSDescriptor {
 						break;
 				}
 			}
+			print();
+		}
+		
+		void print() {
+			values.forEach((k, v) -> System.out.println(k + ": " + v));
+			System.out.println();
+			children.forEach(ParseTree::print);
 		}
 	}
 	
