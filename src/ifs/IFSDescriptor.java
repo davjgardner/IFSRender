@@ -15,11 +15,13 @@ public class IFSDescriptor {
 	
 	double xmin, xmax, ymin, ymax;
 	
+	String name;
+	
 	private Random rand;
 	
 	private List<Function> functions;
 	
-	private Map<String, Double> globals;
+	Map<String, Double> globals;
 	
 	IFSDescriptor(List<String> source) throws Exception {
 		functions = new ArrayList<>();
@@ -30,6 +32,7 @@ public class IFSDescriptor {
 					VERSION + "', got '" + p.values.get("VERSION") + "'");
 			System.exit(1);
 		}
+		this.name = p.values.get("NAME");
 		this.xmin = Double.parseDouble(p.values.get("XMIN"));
 		this.xmax = Double.parseDouble(p.values.get("XMAX"));
 		this.ymin = Double.parseDouble(p.values.get("YMIN"));
@@ -38,6 +41,19 @@ public class IFSDescriptor {
 			functions.add(new Function(c.values.get("X"), c.values.get("Y"),
 					c.values.get("R"), c.values.get("G"), c.values.get("B"),
 					c.values.get("PROB")));
+			c.values.remove("X");
+			c.values.remove("Y");
+			c.values.remove("R");
+			c.values.remove("G");
+			c.values.remove("B");
+			c.values.remove("PROB");
+			// attempt to store the remaining values as global variables
+			c.values.forEach((s, v) -> {
+				try {
+					double val = MathParser2.parse(v);
+					globals.put(s, val);
+				} catch(Exception e) {/* skip if parse fails */}
+			});
 		}
 		rand = new Random();
 	}
@@ -65,6 +81,7 @@ public class IFSDescriptor {
 		vars.put("_R2", p[X] * p[X] + p[Y] * p[Y]);
 		vars.put("_R", Math.sqrt(p[X] * p[X] + p[Y] * p[Y]));
 		vars.put("_theta", Math.atan2(p[Y], p[X]));
+		vars.putAll(globals);
 		double r = rand.nextDouble();
 		double a = 0.0;
 		for (Function f : functions) {

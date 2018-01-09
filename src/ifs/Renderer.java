@@ -10,9 +10,15 @@ import static ifs.IFSDescriptor.FREQ;
 import utils.math.geom.*;
 import utils.Utils;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
 
@@ -118,6 +124,22 @@ public class Renderer {
 		return new Vector2i(x, y);
 	}
 	
+	public void save(String fileName, BufferedImage img) {
+		try {
+			ImageIO.write(img, "PNG", new File(fileName));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void saveDefault(BufferedImage img) {
+		
+		DateFormat df = new SimpleDateFormat("yyy-MM-dd_HH-mm-ss");
+		Date date = new Date();
+		String s = "res/" + descriptor.name + df.format(date) + ".png";
+		save(s, img);
+	}
+	
 	public static void main(String[] args) {
 		String file;
 		if (args.length > 1) {
@@ -132,7 +154,7 @@ public class Renderer {
 			IFSDescriptor d = new IFSDescriptor(source);
 			Renderer renderer = new Renderer(d, pixelScale);
 			BufferedImage img = renderer.render(10_000_000);
-			JFrame f = new JFrame("IFS: " + file) {
+			JFrame f = new JFrame("IFS: " + d.name) {
 				public void paint(Graphics g) {
 					g.drawImage(img, 0, 0, null);
 				}
