@@ -163,7 +163,7 @@ public class IFSDescriptor {
 			children = new ArrayList<>();
 			for (int i = 0; i < data.size(); i++) {
 				String l = data.get(i).trim();
-				if (l.isEmpty()) continue;
+				if (l.isEmpty() || l.startsWith("#")) continue;
 				String[] tokens = l.split(" ");
 				switch(tokens[0]) {
 					case "FUNCTION":

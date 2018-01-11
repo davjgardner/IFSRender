@@ -7,12 +7,17 @@ import static ifs.IFSDescriptor.G;
 import static ifs.IFSDescriptor.B;
 import static ifs.IFSDescriptor.FREQ;
 
+import utils.GifSequenceWriter;
 import utils.math.geom.*;
 import utils.Utils;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.FileImageOutputStream;
+import javax.imageio.stream.ImageOutputStream;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +25,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -133,11 +139,55 @@ public class Renderer {
 	}
 	
 	public void saveDefault(BufferedImage img) {
-		
 		DateFormat df = new SimpleDateFormat("yyy-MM-dd_HH-mm-ss");
 		Date date = new Date();
-		String s = "res/" + descriptor.name + df.format(date) + ".png";
+		String s = "res/" + descriptor.name + '_' + df.format(date) + ".png";
 		save(s, img);
+	}
+	
+	public void renderSequence(Map<String, double[]> vars, int iterations, int frames, int fps, String fileName)
+			throws IOException {
+		BufferedImage[] imgs = new BufferedImage[frames];
+		for (int i=0; i < frames; i++) {
+			double iter = i;
+			vars.forEach((s, range) -> {
+				// lerp
+				double val = range[0] + iter * (range[1] - range[0]) / frames;
+				System.out.println("val = " + val);
+				descriptor.globals.put(s, val);
+			});
+			imgs[i] = render(iterations);
+		}
+		ImageOutputStream out = new FileImageOutputStream(new File(fileName));
+		
+		GifSequenceWriter writer = new GifSequenceWriter(out, imgs[0].getType(), 1000 / fps, false);
+		for (int i=0; i < frames; i++) {
+			writer.writeToSequence(imgs[i]);
+		}
+		
+		writer.close();
+		out.close();
+	}
+	
+	void display(BufferedImage img) {
+		JFrame f = new JFrame("IFS: " + descriptor.name) {
+			public void paint(Graphics g) {
+				g.drawImage(img, 0, 0, null);
+			}
+		};
+		f.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyTyped(KeyEvent e) {
+				if (e.getKeyChar() == 's')
+					saveDefault(img);
+			}
+		});
+		int w = (int) ((descriptor.xmax - descriptor.xmin) * pixelScale);
+		int h = (int) ((descriptor.ymax - descriptor.ymin) * pixelScale);
+		f.setSize(w, h);
+		f.setLocationRelativeTo(null);
+		f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		f.setVisible(true);
 	}
 	
 	public static void main(String[] args) {
@@ -146,25 +196,15 @@ public class Renderer {
 			file = args[1];
 		} else {
 			System.out.println("Usage: java ifs.Renderer [IFS descriptor file]");
-			file = "ifs/2020.ifs";
+			file = "ifs/random/src/4.ifs";
 		}
-		int pixelScale = 350;
+		int pixelScale = 400;
 		try {
 			List<String> source = Utils.readFile(file);
 			IFSDescriptor d = new IFSDescriptor(source);
 			Renderer renderer = new Renderer(d, pixelScale);
 			BufferedImage img = renderer.render(10_000_000);
-			JFrame f = new JFrame("IFS: " + d.name) {
-				public void paint(Graphics g) {
-					g.drawImage(img, 0, 0, null);
-				}
-			};
-			int w = (int) (d.xmax - d.xmin) * pixelScale;
-			int h = (int) (d.ymax - d.ymin) * pixelScale;
-			f.setSize(w, h);
-			f.setLocationRelativeTo(null);
-			f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			f.setVisible(true);
+			renderer.display(img);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
