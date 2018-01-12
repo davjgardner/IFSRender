@@ -9,35 +9,37 @@ public class IFSDescriptor {
 	/**
 	 * IFS Descriptor file parser version
 	 */
-	private static final String VERSION = "2.0";
+	protected static final String VERSION = "2.0";
 	
-	static final int R = 0, G = 1, B = 2, FREQ = 3, X = 3, Y = 4;
+	public static final int R = 0, G = 1, B = 2, FREQ = 3, X = 3, Y = 4;
 	
-	double xmin, xmax, ymin, ymax;
+	public double xmin, xmax, ymin, ymax;
 	
-	String name;
+	public String name;
 	
-	private Random rand;
+	protected Random rand;
 	
-	private List<Function> functions;
+	protected ParseTree parseTree;
 	
-	Map<String, Double> globals;
+	protected List<Function> functions;
+	
+	protected Map<String, Double> globals;
 	
 	IFSDescriptor(List<String> source) throws Exception {
 		functions = new ArrayList<>();
 		globals = new HashMap<>();
-		ParseTree p = new ParseTree(source);
-		if (!p.values.get("VERSION").trim().equals(VERSION)) {
+		parseTree = new ParseTree(source);
+		if (!parseTree.values.get("VERSION").trim().equals(VERSION)) {
 			System.err.println("IFS Descriptor file version mismatch: expected '" +
-					VERSION + "', got '" + p.values.get("VERSION") + "'");
+					VERSION + "', got '" + parseTree.values.get("VERSION") + "'");
 			System.exit(1);
 		}
-		this.name = p.values.get("NAME");
-		this.xmin = Double.parseDouble(p.values.get("XMIN"));
-		this.xmax = Double.parseDouble(p.values.get("XMAX"));
-		this.ymin = Double.parseDouble(p.values.get("YMIN"));
-		this.ymax = Double.parseDouble(p.values.get("YMAX"));
-		for (ParseTree c : p.children) {
+		this.name = parseTree.values.get("NAME");
+		this.xmin = Double.parseDouble(parseTree.values.get("XMIN"));
+		this.xmax = Double.parseDouble(parseTree.values.get("XMAX"));
+		this.ymin = Double.parseDouble(parseTree.values.get("YMIN"));
+		this.ymax = Double.parseDouble(parseTree.values.get("YMAX"));
+		for (ParseTree c : parseTree.children) {
 			functions.add(new Function(c.values.get("X"), c.values.get("Y"),
 					c.values.get("R"), c.values.get("G"), c.values.get("B"),
 					c.values.get("PROB")));
@@ -62,6 +64,8 @@ public class IFSDescriptor {
 		this(source);
 		rand = new Random(randomSeed);
 	}
+	
+	public IFSDescriptor() {}
 	
 	/**
 	 * Randomly picks a function from the list and runs it with the given variable mappings
@@ -95,9 +99,9 @@ public class IFSDescriptor {
 	/**
 	 * Represents a single IFS function
 	 */
-	private class Function {
-		List<String> xrpn, yrpn, rrpn, grpn, brpn;
-		double prob;
+	protected class Function {
+		protected List<String> xrpn, yrpn, rrpn, grpn, brpn;
+		public double prob;
 		
 		/**
 		 * Parses the input expression strings into Reverse Polish Notation to simplify later calls
@@ -109,7 +113,7 @@ public class IFSDescriptor {
 		 * @param prob function probability
 		 * @throws Exception if parsing fails
 		 */
-		Function(String x, String y, String r, String g, String b, String prob) throws Exception {
+		public Function(String x, String y, String r, String g, String b, String prob) throws Exception {
 			this.prob = Double.parseDouble(prob);
 			MathParser2.initConstants(new HashMap<>()); // this is necessary here - bug in MathParser2
 			xrpn = MathParser2.toRPN(MathParser2.tokenizeInput(x));
@@ -125,7 +129,7 @@ public class IFSDescriptor {
 		 * @return {x, y, r, g, b}
 		 * @throws Exception if the evaluation fails
 		 */
-		double[] run(Map<String, Double> vars) throws Exception {
+		public double[] run(Map<String, Double> vars) throws Exception {
 			MathParser2.initConstants(vars);
 			double x = MathParser2.parseRPN(xrpn);
 			double y = MathParser2.parseRPN(yrpn);
@@ -145,9 +149,9 @@ public class IFSDescriptor {
 	/**
 	 * Intermediate state for parsing descriptor files
 	 */
-	private class ParseTree {
-		Map<String, String> values;
-		List<ParseTree> children;
+	protected class ParseTree {
+		public Map<String, String> values;
+		public List<ParseTree> children;
 		
 		ParseTree(Map<String, String> values, List<ParseTree> children) {
 			this.values = values;
@@ -158,7 +162,7 @@ public class IFSDescriptor {
 		 * Creates a <code>ParseTree</code> from the given source code
 		 * @param data line-separated source code
 		 */
-		ParseTree(List<String> data) {
+		public ParseTree(List<String> data) {
 			values = new HashMap<>();
 			children = new ArrayList<>();
 			for (int i = 0; i < data.size(); i++) {

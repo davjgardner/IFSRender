@@ -125,7 +125,7 @@ public class Renderer {
 	}
 	
 	private Vector2i scalePoint(double[] p) {
-		int x = (int) ((p[IFSDescriptor.X] - descriptor.xmin) * pixelScale);
+		int x = (int) ((p[X] - descriptor.xmin) * pixelScale);
 		int y = (int) ((p[Y] - descriptor.ymin) * pixelScale);
 		return new Vector2i(x, y);
 	}
