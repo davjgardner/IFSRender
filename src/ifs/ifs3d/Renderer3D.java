@@ -13,6 +13,8 @@ import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static ifs.ifs3d.IFSDescriptor3D.X;
@@ -36,10 +38,9 @@ public class Renderer3D {
 		this.voxelScale = voxelScale;
 	}
 	
-	double[][][][] plot(int iterations, int iterFloor) {
+	Map<Vector3i, double[]> plot(int iterations, int iterFloor) {
 		Vector3i size = getSize();
-		// 3 axes, RGB + FREQ (4 attributes) per voxel
-		double[][][][] histogram = new double[size.x][size.y][size.z][4];
+		Map<Vector3i, double[]> histogram = new HashMap<>();
 		// x, y, z, r, g, b
 		double[] p = new double[6];
 		p[X] = descriptor.xmin + rand.nextDouble() * (descriptor.xmax - descriptor.xmin);
@@ -58,21 +59,36 @@ public class Renderer3D {
 				if (pos.x < size.x && pos.x >= 0 &&
 						pos.y < size.y && pos.y >= 0 &&
 						pos.z < size.z && pos.z >= 0) {
-					histogram[pos.x][pos.y][pos.z][FREQ]++;
-					histogram[pos.x][pos.y][pos.z][R] = (histogram[pos.x][pos.y][pos.z][R] + p[R]) / 2;
-					histogram[pos.x][pos.y][pos.z][G] = (histogram[pos.x][pos.y][pos.z][G] + p[G]) / 2;
-					histogram[pos.x][pos.y][pos.z][B] = (histogram[pos.x][pos.y][pos.z][B] + p[B]) / 2;
+					double[] prev = histogram.get(pos);
+					if (prev == null) prev = new double[6];
+					prev[R] = (prev[R] + p[R]) / 2;
+					prev[G] = (prev[G] + p[G]) / 2;
+					prev[B] = (prev[B] + p[B]) / 2;
+					prev[FREQ]++;
+					histogram.put(pos, prev);
 				}
 			}
 		}
 		return histogram;
 	}
 	
-	double[][][][] process(double[][][][] histogram) {
+	Map<Vector3i, double[]> process(Map<Vector3i, double[]> histogram) {
+		double maxFreq = 0;
+		for (double[] att : histogram.values()) {
+			if (att[FREQ] > maxFreq) maxFreq = att[FREQ];
+		}
+		double logMaxFreq = Math.log(maxFreq);
+		histogram.values().forEach(att -> {
+			// we know FREQ is not zero because this value exists in the table
+			double alpha = Math.log(att[FREQ]) / logMaxFreq;
+			att[R] *= alpha;
+			att[G] *= alpha;
+			att[B] *= alpha;
+		});
 		return histogram;
 	}
 	
-	BufferedImage render2d(double[][][][] voxelData) {
+	BufferedImage render2d(Map<Vector3i, double[]> voxelData) {
 		return null;
 	}
 	

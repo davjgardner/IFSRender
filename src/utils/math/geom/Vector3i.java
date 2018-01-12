@@ -50,4 +50,10 @@ public class Vector3i {
 		Vector3i l = this.subtract(v);
 		return l.dot(l);
 	}
+	
+	@Override
+	public int hashCode() {
+		return x * 51 + y * 37 + z * 17;
+	}
+	
 }
