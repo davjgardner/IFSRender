@@ -52,6 +52,13 @@ public class Vector3i {
 	}
 	
 	@Override
+	public boolean equals(Object o) {
+		if (o.getClass() != Vector3i.class) return false;
+		Vector3i v = (Vector3i) o;
+		return x == v.x && y == v.y && z == v.z;
+	}
+	
+	@Override
 	public int hashCode() {
 		return x * 51 + y * 37 + z * 17;
 	}

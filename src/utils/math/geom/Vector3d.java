@@ -18,6 +18,12 @@ public class Vector3d {
 		this.z = d;
 	}
 	
+	public Vector3d(Vector3d v) {
+		this.x = v.x;
+		this.y = v.y;
+		this.z = v.z;
+	}
+	
 	public Vector3d() {}
 	
 	public Vector3d add(Vector3d v) {
@@ -49,5 +55,9 @@ public class Vector3d {
 	public double dist2(Vector3d v) {
 		Vector3d l = this.subtract(v);
 		return l.dot(l);
+	}
+	
+	public Vector3i toVector3i() {
+		return new Vector3i((int) x, (int) y, (int) z);
 	}
 }

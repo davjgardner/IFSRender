@@ -11,6 +11,8 @@ import java.util.Random;
 
 public class IFSDescriptor3D extends IFSDescriptor {
 	
+	private static final String VERSION = "2.0-3D";
+	
 	static final int Z = 5;
 	
 	double zmin, zmax;
